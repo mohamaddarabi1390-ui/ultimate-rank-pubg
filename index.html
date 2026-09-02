@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مسابقات PUBG</title>
+<style>
+body{margin:0;background:#101318;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:520px;margin:auto;padding:22px 16px}
+.card{background:#191e26;border:1px solid #303744;border-radius:18px;padding:18px;margin:14px 0}
+h1{margin:0 0 8px}.muted{color:#aeb6c3}
+input{width:100%;box-sizing:border-box;padding:13px;margin:7px 0 12px;border-radius:10px;border:1px solid #39414d;background:#11151a;color:#fff}
+button{width:100%;padding:14px;border:0;border-radius:11px;background:#fff;color:#111;font-weight:bold;font-size:16px}
+.bar{height:9px;background:#303640;border-radius:9px;overflow:hidden}.fill{height:100%;width:0%;background:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="card"><h1>🏆 مسابقات PUBG</h1><div class="muted">ثبت‌نام مسابقه</div></div>
+<div class="card">
+<b>ظرفیت: <span id="n">0</span> / 100</b>
+<div class="bar"><div class="fill" id="bar"></div></div>
+</div>
+<div class="card">
+<h2>📝 ثبت‌نام</h2>
+<form id="f">
+<label>UID اکانت PUBG</label>
+<input id="uid" required placeholder="UID خود را وارد کنید">
+<label>اسم داخل بازی</label>
+<input id="name" required placeholder="اسم داخل بازی">
+<button>ثبت‌نام</button>
+</form>
+<p id="msg" class="muted"></p>
+</div>
+<div class="card"><h2>📜 قوانین</h2><p class="muted">اطلاعات خود را دقیق وارد کنید و فقط با مشخصات خودتان ثبت‌نام کنید.</p></div>
+</div>
+<script>
+let n=Number(localStorage.getItem("pubg_count")||0);
+function draw(){document.getElementById("n").textContent=n;document.getElementById("bar").style.width=Math.min(n,100)+"%"} draw();
+document.getElementById("f").onsubmit=e=>{
+ e.preventDefault();
+ const m=document.getElementById("msg");
+ if(n>=100){m.textContent="ظرفیت مسابقه تکمیل شده است.";return}
+ n++; localStorage.setItem("pubg_count",n); draw();
+ m.textContent="ثبت‌نام شما با موفقیت انجام شد ✅"; e.target.reset();
+};
+</script>
+</body>
+</html>
