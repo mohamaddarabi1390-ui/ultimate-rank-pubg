@@ -45,8 +45,16 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      background: #555;
+    }
+
     .logout {
       background: #c0392b;
+    }
+
+    .delete {
+      background: #e74c3c;
     }
 
     .stat {
@@ -85,7 +93,6 @@
     <h3>🔐 ورود مدیر</h3>
 
     <input id="email" type="email" placeholder="ایمیل">
-
     <input id="password" type="password" placeholder="رمز عبور">
 
     <button id="loginBtn">ورود</button>
@@ -120,7 +127,7 @@
 <script>
   const SUPABASE_URL = "https://vwcavnwihbmyyrjqgyvl.supabase.co";
 
-  // همان Publishable Key قبلی خودت را اینجا قرار بده
+  // همان Publishable Key خودت را اینجا قرار بده
   const SUPABASE_KEY = "sb_publishable_-COmgw_chv96DEtcvr7pYQ_bj8ApCBs";
 
   const supabaseClient = supabase.createClient(
@@ -178,10 +185,41 @@
         <b>${index + 1}. ${escapeHtml(player.player_name)}</b>
         <div>UID: ${escapeHtml(player.uid)}</div>
         <div class="time">🕐 ${time}</div>
+        <button class="delete" onclick="deletePlayer(${player.id})">
+          🗑️ حذف بازیکن
+        </button>
       `;
 
       players.appendChild(div);
     });
+  }
+
+  async function deletePlayer(id) {
+
+    const confirmed = confirm(
+      "آیا مطمئنی می‌خواهی این بازیکن را حذف کنی؟"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    panelMessage.textContent = "در حال حذف...";
+
+    const { error } = await supabaseClient
+      .from("registrations")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      panelMessage.textContent = "حذف انجام نشد.";
+      return;
+    }
+
+    panelMessage.textContent = "بازیکن با موفقیت حذف شد ✅";
+
+    await loadPlayers();
   }
 
   function escapeHtml(text) {
@@ -214,10 +252,11 @@
     loginBtn.disabled = true;
     loginBtn.textContent = "در حال ورود...";
 
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
 
     if (error) {
       loginMessage.textContent = "ایمیل یا رمز عبور صحیح نیست.";
