@@ -1,1 +1,255 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل مدیریت مسابقه</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Tahoma, sans-serif;
+      background: #101010;
+      color: white;
+      padding: 20px;
+    }
+
+    .box {
+      max-width: 700px;
+      margin: auto;
+    }
+
+    .card {
+      background: #1c1c1c;
+      padding: 18px;
+      border-radius: 15px;
+      margin-top: 15px;
+    }
+
+    input, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #2ecc71;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .logout {
+      background: #c0392b;
+    }
+
+    .stat {
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .player {
+      background: #282828;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .time {
+      color: #aaa;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    #loginMessage,
+    #panelMessage {
+      text-align: center;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>🏆 پنل مدیریت مسابقه</h1>
+
+  <div class="card" id="loginBox">
+    <h3>🔐 ورود مدیر</h3>
+
+    <input id="email" type="email" placeholder="ایمیل">
+
+    <input id="password" type="password" placeholder="رمز عبور">
+
+    <button id="loginBtn">ورود</button>
+
+    <div id="loginMessage"></div>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+
+    <div class="card">
+      <div class="stat">
+        👥 ثبت‌نام شده:
+        <b id="total">0</b>
+        / 100
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📋 لیست بازیکنان</h3>
+      <div id="players">در حال دریافت اطلاعات...</div>
+    </div>
+
+    <div class="card">
+      <button class="logout" id="logoutBtn">خروج از پنل</button>
+      <div id="panelMessage"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://vwcavnwihbmyyrjqgyvl.supabase.co";
+
+  // همان Publishable Key قبلی خودت را اینجا قرار بده
+  const SUPABASE_KEY = "sb_publishable_-COmgw_chv96DEtcvr7pYQ_bj8ApCBs";
+
+  const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  const loginBox = document.getElementById("loginBox");
+  const adminPanel = document.getElementById("adminPanel");
+
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const loginMessage = document.getElementById("loginMessage");
+  const panelMessage = document.getElementById("panelMessage");
+
+  const total = document.getElementById("total");
+  const players = document.getElementById("players");
+
+  async function loadPlayers() {
+
+    players.textContent = "در حال دریافت اطلاعات...";
+
+    const { data, error } = await supabaseClient
+      .from("registrations")
+      .select("id, uid, player_name, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      players.textContent = "خطا در دریافت اطلاعات.";
+      return;
+    }
+
+    total.textContent = data.length;
+
+    if (data.length === 0) {
+      players.textContent = "هنوز کسی ثبت‌نام نکرده است.";
+      return;
+    }
+
+    players.innerHTML = "";
+
+    data.forEach((player, index) => {
+
+      const div = document.createElement("div");
+      div.className = "player";
+
+      const time = new Date(player.created_at).toLocaleString("fa-IR");
+
+      div.innerHTML = `
+        <b>${index + 1}. ${escapeHtml(player.player_name)}</b>
+        <div>UID: ${escapeHtml(player.uid)}</div>
+        <div class="time">🕐 ${time}</div>
+      `;
+
+      players.appendChild(div);
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+  }
+
+  async function checkSession() {
+
+    const { data } = await supabaseClient.auth.getSession();
+
+    if (data.session) {
+      loginBox.style.display = "none";
+      adminPanel.style.display = "block";
+      loadPlayers();
+    }
+  }
+
+  loginBtn.addEventListener("click", async () => {
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+      loginMessage.textContent = "ایمیل و رمز عبور را وارد کنید.";
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = "در حال ورود...";
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) {
+      loginMessage.textContent = "ایمیل یا رمز عبور صحیح نیست.";
+      loginBtn.disabled = false;
+      loginBtn.textContent = "ورود";
+      return;
+    }
+
+    loginMessage.textContent = "";
+
+    loginBox.style.display = "none";
+    adminPanel.style.display = "block";
+
+    await loadPlayers();
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+
+    await supabaseClient.auth.signOut();
+
+    adminPanel.style.display = "none";
+    loginBox.style.display = "block";
+
+    emailInput.value = "";
+    passwordInput.value = "";
+
+    panelMessage.textContent = "";
+    loginMessage.textContent = "با موفقیت خارج شدید.";
+  });
+
+  checkSession();
+</script>
+
+</body>
+</html>
